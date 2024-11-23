@@ -2,9 +2,11 @@ import os
 import sys
 import torch
 from utils.Dataloader import CamObjDataset, get_loader
+print(torch.version.cuda)
+
 
 # Set up data paths and parameters
-root = '../../COD10K-v3/COD10K-v3'
+root = '../../COD10K-v3'
 
 if os.path.exists(root):
     print(f"Found COD10K-v3 directory: {os.path.abspath(root)}")
