@@ -1,5 +1,3 @@
-"https://github.com/DengPingFan/SINet/blob/master/Src/utils/Dataloader.py#L5"
-
 import os
 from PIL import Image
 import torch.utils.data as data
@@ -7,7 +5,6 @@ import torchvision.transforms as transforms
 import cv2
 import numpy as np
 import torch
-
 
 class CamObjDataset(data.Dataset):
     def __init__(self, image_root, gt_root, trainsize):
