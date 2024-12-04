@@ -1,61 +1,33 @@
 import os
-import sys
 import torch
 from utils.Dataloader import CamObjDataset, get_loader
-print(torch.version.cuda)
+import numpy as np
 
-
-# Set up data paths and parameters
-root = '../../COD10K-v3'
-
-if os.path.exists(root):
-    print(f"Found COD10K-v3 directory: {os.path.abspath(root)}")
-else:
-    print(f"COD10K-v3 directory not found at: {os.path.abspath(root)}")
-    sys.exit(1)  # Exit the script with a non-zero status code
-
-# Define paths to images and ground truth
-image_root = os.path.join(root, 'Train', 'Image')
-gt_root = os.path.join(root, 'Train', 'GT_Object')
-
-# Ensure that image_root and gt_root end with a '/'
-if not image_root.endswith('/'):
-    image_root += '/'
-if not gt_root.endswith('/'):
-    gt_root += '/'
-
-# Check if the image and ground truth directories exist
-if not os.path.exists(image_root):
-    print(f"Image directory not found at: {os.path.abspath(image_root)}")
-    sys.exit(1)
-
-if not os.path.exists(gt_root):
-    print(f"Ground truth directory not found at: {os.path.abspath(gt_root)}")
-    sys.exit(1)
-
-# Set parameters
-batch_size = 4
-train_size = 352  # As used in your Dataloader.py
+# Set up data paths
+base_path = '/home/hyli/school/COD_Project/data/ours'
+image_root = os.path.join(base_path, 'Train/Image/')
+gt_root = os.path.join(base_path, 'Train/GT_Object/')
 
 # Create data loader
-data_loader = get_loader(
+train_loader = get_loader(
     image_root=image_root,
     gt_root=gt_root,
-    batchsize=batch_size,
-    trainsize=train_size,
-    shuffle=True,
-    num_workers=0,  # Set to 0 for stable training
-    pin_memory=True
+    batchsize=1,  # Load just one image
+    trainsize=384,
+    shuffle=False
 )
 
-# Iterate over data loader and print some data
-for i, (images, gts) in enumerate(data_loader):
-    print(f"Batch {i + 1}:")
-    print(f"Images shape: {images.shape}")  # Should be [batch_size, 3, train_size, train_size]
-    print(f"Ground Truths shape: {gts.shape}")  # Should be [batch_size, 1, train_size, train_size]
-    # You can print the actual tensor values if needed
-    print(f"Images tensor: {images}")
-    print(f"Ground Truth tensor: {gts}")
-    # Break after the first batch to prevent printing too much data
-    if i == 0:
-        break
+# Get first image and its ground truth
+for images, gts in train_loader:
+    print("\nFirst Training Image:")
+    print(f"Image shape: {images.shape}")  # Will be [1, 3, 384, 384]
+    print("\nSample of normalized image values (10x10 patch):")
+    print("Red channel:")
+    print(images[0, 0, :10, :10])  # First 10x10 pixels of red channel
+
+    print("\nCorresponding Ground Truth:")
+    print(f"GT shape: {gts.shape}")  # Will be [1, 1, 384, 384]
+    print("\nSample of ground truth values (10x10 patch, 1=object, 0=background):")
+    print(gts[0, 0, :10, :10])
+
+    break
