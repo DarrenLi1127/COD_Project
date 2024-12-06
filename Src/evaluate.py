@@ -1,4 +1,5 @@
 import os
+import cv2
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -46,8 +47,8 @@ class Evaluator:
 
         # Load test dataset
         self.test_dataset = test_dataset(
-            image_root=os.path.join(config.test_path, 'images/'),
-            gt_root=os.path.join(config.test_path, 'GT_object/'),
+            image_root=os.path.join(config.test_path['image']),
+            gt_root=os.path.join(config.test_path['gt']),
             testsize=config.img_size
         )
 
@@ -83,7 +84,7 @@ class Evaluator:
             for i in tqdm(range(self.test_dataset.size)):
                 # Load data
                 image, gt, name = self.test_dataset.load_data()
-                gt_np = np.array(gt).astype(np.float64)
+                gt_np = np.array(gt).astype(np.bool)
 
                 # Forward pass
                 image = image.to(self.device)

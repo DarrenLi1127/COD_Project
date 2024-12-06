@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from utils.dataloader import test_dataset
 from tqdm import tqdm
 import logging
 from datetime import datetime
@@ -11,6 +12,12 @@ from models.dqnet import DQnet
 from utils.loss import DQnetLoss
 from utils.dataloader import get_loader
 from configs.config import Config
+
+import numpy as np
+import torch.nn.functional as F
+from metrics.SM import SM
+from metrics.EM import EM
+from metrics.WFM import WFM
 
 
 class Trainer:
@@ -59,10 +66,60 @@ class Trainer:
             num_workers=config.num_workers,
             pin_memory=True
         )
+        
+        self.test_dataset = test_dataset(
+            image_root=config.test_path['image'],
+            gt_root=config.test_path['gt'],
+            testsize=config.img_size
+        )
+
 
         # Best model tracking
         self.best_loss = float('inf')
+        self.best_metrics = {
+            'SM': 0,
+            'EM': 0,
+            'WFM': 0,
+            'MAE': float('inf')
+        }
+        
+        
+    def evaluate(self):
+        """Evaluate model on test dataset"""
+        self.model.eval()
 
+        metrics = {
+            'SM': [],
+            'EM': [],
+            'WFM': [],
+            'MAE': []
+        }
+
+        with torch.no_grad():
+            for i in range(self.test_dataset.size):
+                # Load data
+                image, gt, _ = self.test_dataset.load_data()
+                gt_np = np.array(gt).astype(np.bool)
+
+                # Forward pass
+                image = image.to(self.device)
+                outputs = self.model(image)
+                pred = outputs['pred']
+
+                # Post-process prediction
+                pred = F.interpolate(pred, size=gt_np.shape, mode='bilinear', align_corners=False)
+                pred_np = pred.squeeze().cpu().numpy()
+
+                # Calculate metrics
+                metrics['SM'].append(SM(pred_np, gt_np))
+                metrics['EM'].append(EM(pred_np, gt_np))
+                metrics['WFM'].append(WFM(pred_np, gt_np))
+                metrics['MAE'].append(np.mean(np.abs(pred_np - gt_np)))
+
+        # Calculate mean scores
+        mean_metrics = {k: np.mean(v) for k, v in metrics.items()}
+
+        return mean_metrics
     def create_optimizer_param_groups(self, model, lr, layer_decay):
         """Create parameter groups for layer-wise learning rate decay"""
         param_groups = []
@@ -133,29 +190,30 @@ class Trainer:
         )
         self.logger = logging
 
-    def save_checkpoint(self, epoch, loss, is_best=False):
+    def save_checkpoint(self, epoch, loss, metrics=None, is_best=False):
         """Save model checkpoint"""
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict(),
-            'loss': loss
+            'loss': loss,
+            'metrics': metrics
         }
-
+        
         checkpoint_path = os.path.join(
             self.config.checkpoints_dir,
             f'checkpoint_epoch_{epoch}.pth'
         )
         torch.save(checkpoint, checkpoint_path)
-
+        
         if is_best:
             best_path = os.path.join(
                 self.config.checkpoints_dir,
                 'best_model.pth'
             )
             torch.save(checkpoint, best_path)
-            self.logger.info(f"Saved best model with loss: {loss:.4f}")
+            self.logger.info(f"Saved best model with metrics: {metrics}")
 
     def train_epoch(self, epoch):
         """Train for one epoch"""
@@ -191,25 +249,39 @@ class Trainer:
     def train(self):
         """Main training loop"""
         self.logger.info(f"Starting training with config:\n{self.config}")
-
+        
         for epoch in range(self.config.num_epochs):
             # Train for one epoch
             epoch_loss = self.train_epoch(epoch)
-
+            
+            # Evaluate model
+            metrics = self.evaluate()
+            
             # Update learning rate
             self.scheduler.step()
-
+            
             # Log progress
             self.logger.info(
-                f"Epoch {epoch}: Loss={epoch_loss:.4f}, "
-                f"LR={self.scheduler.get_last_lr()[0]:.6f}"
+                f"Epoch {epoch}:\n"
+                f"Loss={epoch_loss:.4f}, LR={self.scheduler.get_last_lr()[0]:.6f}\n"
+                f"SM={metrics['SM']:.4f}, EM={metrics['EM']:.4f}, "
+                f"WFM={metrics['WFM']:.4f}, MAE={metrics['MAE']:.4f}"
             )
-
+            
+            # Check if this is the best model
+            is_best = False
+            if metrics['SM'] > self.best_metrics['SM']:
+                self.best_metrics['SM'] = metrics['SM']
+                is_best = True
+            if metrics['EM'] > self.best_metrics['EM']:
+                self.best_metrics['EM'] = metrics['EM']
+            if metrics['WFM'] > self.best_metrics['WFM']:
+                self.best_metrics['WFM'] = metrics['WFM']
+            if metrics['MAE'] < self.best_metrics['MAE']:
+                self.best_metrics['MAE'] = metrics['MAE']
+            
             # Save checkpoint
-            is_best = epoch_loss < self.best_loss
-            if is_best:
-                self.best_loss = epoch_loss
-            self.save_checkpoint(epoch, epoch_loss, is_best)
+            self.save_checkpoint(epoch, epoch_loss, metrics, is_best)
 
 
 if __name__ == '__main__':

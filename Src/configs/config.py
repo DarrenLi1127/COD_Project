@@ -3,7 +3,7 @@ from torchvision import transforms
 
 class Config:
     # Project paths
-    project_root = '/home/hyli/school/COD_Project'
+    project_root = '/school/CSCI_2470/COD_Project'
     train_path = {
         'image': os.path.join(project_root, 'data/ours/Train/Image/'),
         'gt': os.path.join(project_root, 'data/ours/Train/GT_Object/')
@@ -29,7 +29,7 @@ class Config:
 
     # Training settings
     device = 'cuda'
-    num_epochs = 10
+    num_epochs = 100
     batch_size = 8  # Reduced due to larger image size
     num_workers = 4
 

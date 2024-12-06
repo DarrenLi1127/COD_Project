@@ -199,3 +199,6 @@ pyrightconfig.json
 
 data
 models
+pretrained_weights
+logs
+results
