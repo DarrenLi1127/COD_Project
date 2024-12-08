@@ -99,7 +99,7 @@ class Trainer:
             for i in range(self.test_dataset.size):
                 # Load data
                 image, gt, _ = self.test_dataset.load_data()
-                gt_np = np.array(gt).astype(np.bool)
+                gt_np = np.array(gt).astype(np.bool_)
 
                 # Forward pass
                 image = image.to(self.device)
@@ -198,7 +198,7 @@ class Trainer:
             'optimizer_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict(),
             'loss': loss,
-            'metrics': metrics
+            # 'metrics': metrics
         }
         
         checkpoint_path = os.path.join(
@@ -255,7 +255,7 @@ class Trainer:
             epoch_loss = self.train_epoch(epoch)
             
             # Evaluate model
-            metrics = self.evaluate()
+            # metrics = self.evaluate()
             
             # Update learning rate
             self.scheduler.step()
@@ -264,24 +264,24 @@ class Trainer:
             self.logger.info(
                 f"Epoch {epoch}:\n"
                 f"Loss={epoch_loss:.4f}, LR={self.scheduler.get_last_lr()[0]:.6f}\n"
-                f"SM={metrics['SM']:.4f}, EM={metrics['EM']:.4f}, "
-                f"WFM={metrics['WFM']:.4f}, MAE={metrics['MAE']:.4f}"
+                # f"SM={metrics['SM']:.4f}, EM={metrics['EM']:.4f}, "
+                # f"WFM={metrics['WFM']:.4f}, MAE={metrics['MAE']:.4f}"
             )
             
             # Check if this is the best model
-            is_best = False
-            if metrics['SM'] > self.best_metrics['SM']:
-                self.best_metrics['SM'] = metrics['SM']
-                is_best = True
-            if metrics['EM'] > self.best_metrics['EM']:
-                self.best_metrics['EM'] = metrics['EM']
-            if metrics['WFM'] > self.best_metrics['WFM']:
-                self.best_metrics['WFM'] = metrics['WFM']
-            if metrics['MAE'] < self.best_metrics['MAE']:
-                self.best_metrics['MAE'] = metrics['MAE']
+            # is_best = False
+            # if metrics['SM'] > self.best_metrics['SM']:
+            #     self.best_metrics['SM'] = metrics['SM']
+            #     is_best = True
+            # if metrics['EM'] > self.best_metrics['EM']:
+            #     self.best_metrics['EM'] = metrics['EM']
+            # if metrics['WFM'] > self.best_metrics['WFM']:
+            #     self.best_metrics['WFM'] = metrics['WFM']
+            # if metrics['MAE'] < self.best_metrics['MAE']:
+            #     self.best_metrics['MAE'] = metrics['MAE']
             
             # Save checkpoint
-            self.save_checkpoint(epoch, epoch_loss, metrics, is_best)
+            self.save_checkpoint(epoch, epoch_loss)
 
 
 if __name__ == '__main__':

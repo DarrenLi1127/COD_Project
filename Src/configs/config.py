@@ -5,12 +5,12 @@ class Config:
     # Project paths
     project_root = '/school/CSCI_2470/COD_Project'
     train_path = {
-        'image': os.path.join(project_root, 'data/ours/Train/Image/'),
-        'gt': os.path.join(project_root, 'data/ours/Train/GT_Object/')
+        'image': os.path.join(project_root, 'data/Train/Image/'),
+        'gt': os.path.join(project_root, 'data/Train/GT_Object/')
     }
     test_path = {
-        'image': os.path.join(project_root, 'data/ours/Test/Image/'),
-        'gt': os.path.join(project_root, 'data/ours/Test/GT_Object/')
+        'image': os.path.join(project_root, 'data/Test/Image/'),
+        'gt': os.path.join(project_root, 'data/Test/GT_Object/')
     }
     checkpoints_dir = os.path.join(project_root, 'checkpoints')
     logs_dir = os.path.join(project_root, 'logs')
@@ -30,7 +30,7 @@ class Config:
     # Training settings
     device = 'cuda'
     num_epochs = 100
-    batch_size = 8  # Reduced due to larger image size
+    batch_size = 16  # Reduced due to larger image size
     num_workers = 4
 
     # Optimizer settings
