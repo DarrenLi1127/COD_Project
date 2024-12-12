@@ -3,30 +3,29 @@ import cv2
 from tqdm import tqdm
 from py_sod_metrics import MAE, Emeasure, Fmeasure, Smeasure, WeightedFmeasure
 
-method='HGINet' 
 for _data_name in ['COD10K']:
     print("eval-dataset: {}".format(_data_name))
-    mask_root = '/school/CSCI_2470/COD_Project/data/Test/{}/'.format("GT_Object") # change path
-    pred_root = '/school/CSCI_2470/COD_Project/results/predictions/' # change path
-    mask_name_list = sorted(os.listdir(mask_root))
+    pred_root = '/school/CSCI_2470/COD_Project/results/refined_archive_80/masks' 
+    mask_root = '/school/CSCI_2470/COD_Project/data/Test/GT_Object'
+    pred_name_list = sorted(os.listdir(pred_root))
     ious = []
     FM = Fmeasure()
     WFM = WeightedFmeasure()
     SM = Smeasure()
     EM = Emeasure()
     M = MAE()
-    for mask_name in tqdm(mask_name_list, total=len(mask_name_list)):
-        mask_path = os.path.join(mask_root, mask_name)
-        pred_path = os.path.join(pred_root, mask_name)
+    for pred_name in tqdm(pred_name_list, total=len(pred_name_list)):
+        mask_path = os.path.join(mask_root, pred_name).replace('.jpg', '.png')
+        pred_path = os.path.join(pred_root, pred_name)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         
         pred = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
         
-        # # compute iou
-        # intersection = (mask & pred).sum()
-        # union = (mask | pred).sum()
-        # iou = intersection / union
-        # ious.append(iou)
+        # compute iou
+        intersection = (mask & pred).sum()
+        union = (mask | pred).sum()
+        iou = intersection / union
+        ious.append(iou)
         
         mask_height, mask_width = mask.shape
 
@@ -43,6 +42,7 @@ for _data_name in ['COD10K']:
     sm = SM.get_results()["sm"]
     em = EM.get_results()["em"]
     mae = M.get_results()["mae"]
+    iou = sum(ious) / len(ious)
 
     results = {
         "Smeasure": sm,
@@ -54,6 +54,7 @@ for _data_name in ['COD10K']:
         "adpFm": fm["adp"],
         "meanFm": fm["curve"].mean(),
         "maxFm": fm["curve"].max(),
+        "IoU": iou
     }
 
     print(results)
